@@ -11,7 +11,7 @@ Install preliminary required packages:
 
 ::
 
-  apt-get install nginx git-core python3-dev python3-pip virtualenv python3-virtualenv
+  apt-get install git-core python3-dev python3-pip virtualenv python3-virtualenv nginx supervisor 
 
 
 Some commands need to be run as root - others as the user bepasty.
@@ -22,15 +22,17 @@ Commands to run as root:
 
   # add user bepasty to system
   adduser bepasty --disabled-login
-  # add path to bepasty/.bash_rc
-  echo 'export PATH="/home/bepasty/.local/bin:$PATH"' >> /home/bepasty/.bash_rc
   
 Commands to run as user bepasty:
 
 ::
 
   # change to user bepasty
-  sudo su - bepasty
+  su - bepasty
+  # add path to bepasty/.bashrc
+  echo "export PATH=\"/home/bepasty/.local/bin:\$PATH\"" >> /home/bepasty/.bashrc
+  # reload .bashrc
+  source ~/.bashrc
   # clone repository from github
   git clone https://github.com/bepasty/bepasty-server.git repo
   # create folder for storage
@@ -51,17 +53,8 @@ Config file for bepasty -- ``/home/bepasty/bepasty.conf``:
 
 Copy ``src/bepasty/config.py`` to ``/home/bepasty/bepasty.conf`` first,
 remove the ``class Config`` and remove all indents in the file.
-The comments can be removed too, if you feel the need to.
-
-An easy way to do this in one go:
-
-::
-
-  # create trim alias
-  alias trim="awk '{\$1=\$1};1'"
-  # remove the top 11 lines + trim spaces at beginning of lines
-  trim src/bepasty/config.py | tail -n +11 > /home/bepasty/bepasty.conf
-
+The comments can be removed too, if you feel the need to.  If you wish 
+to use a script to do this in one go - please see the Tips & Tricks below.
 
 At least modify these four config variables.  
 
@@ -156,9 +149,9 @@ Places to look when troubleshooting:
 
   journalctl -u nginx.service
   journalctl -u supervisor.service
-  tail /home/bepasty/logs/nginx-access.log
-  tail /home/bepasty/logs/nginx-error.log
-  tail /home/bepasty/logs/gunicorn_supervisor.log
+  less +F /home/bepasty/logs/nginx-access.log
+  less +F /home/bepasty/logs/nginx-error.log
+  less +F /home/bepasty/logs/gunicorn_supervisor.log
 
 Important notes:
 
@@ -167,12 +160,17 @@ Important notes:
   **not** what you need. Due to how flask config files work, you need to
   remove the class statement and outdent all the settings, so you just have
   global KEY = VALUE statements left on the top level of the config file.
+  If you wish to use a script to do this in one go - please see the Tips & Tricks below.
 * When adding additional users in ``bepasty/config.py`` make sure you have
   ``'user_secret': 'correct,list,of,permissions',``
   any missing ``'' : '',`` will result in the bepasty server not starting.
   
 Tips & Tricks:
-
+* To convert the ``src/bepasty/config.py`` to ``/home/bepasty/bepasty.conf`` in one easy go:
+  # create trim alias
+  ``alias trim="awk '{\$1=\$1};1'"``
+  # remove the top 11 lines + trim spaces at beginning of lines
+  ``trim src/bepasty/config.py | tail -n +11 > /home/bepasty/bepasty.conf``
 * The user secret in ``bepasty/config.py`` needs to be secure - an easy way 
   to create secure random character strings on the command line is:
   ``tr -dc A-Za-z0-9 </dev/urandom | head -c 10 ; echo ''``
